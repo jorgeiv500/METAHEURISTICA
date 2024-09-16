@@ -1,8 +1,9 @@
 ---
 title: "Algoritmos Metaheurísticos"
-author: "Presentación"
+author: "Jorge Ivan Romero"
 format: 
-  revealjs: 
+  revealjs:
+    chalkboard: true 
     theme: simple
     transition: slide
     slide-number: true
