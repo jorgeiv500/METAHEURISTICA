@@ -1,0 +1,315 @@
+---
+title: "Algoritmos Metaheurísticos"
+author: "Presentación"
+format: 
+  revealjs: 
+    theme: simple
+    transition: slide
+    slide-number: true
+    center: true
+    controls: true
+    progress: true
+    highlight-style: monokai
+    # Incluir Highlight.js desde su CDN
+    includes:
+      in-header: |
+        <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.7.0/styles/default.min.css">
+        <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.7.0/highlight.min.js"></script>
+        <script>hljs.highlightAll();</script>
+        
+execute: 
+  echo: false
+---
+
+## Algoritmos Metaheurísticos
+
+### Recocido Simulado, Búsqueda Tabú, PSO y Algoritmos Genéticos
+
+
+## Algoritmos Metaheurísticos
+
+### Recocido Simulado, Búsqueda Tabú, PSO y Algoritmos Genéticos
+
+---
+
+## Aplicación de secuenciación de tareas
+
+
+Consideremos el caso de secuenciar \( n \) tareas en una sola máquina. Aquí están las definiciones y los datos del problema:
+
+- \( $t_{j}$ \): Tiempo de procesamiento de la tarea \( j \)
+- \( $d_j$ \): Fecha límite para la tarea \( j \) (medida a partir de cero)
+- \( $h_{j}$ \): Costo de retención (almacenamiento) por unidad de tiempo si la tarea \( j \) se completa con anticipación
+- \( $p_j$ \): Costo de penalización por unidad de tiempo si la tarea \( j \) se retrasa
+
+---
+
+### Datos del problema
+
+| Tarea \( j \) | Tiempo de procesamiento \( $T_{j}$ \) | Fecha límite \( $d_{j}$ \) | Costo de retención \( $h_{j}$ \) | Costo de penalización \( $p_{j}$ \) |
+|---------------|-----------------------------------|------------------------|------------------------------|--------------------------------|
+| 1             | 10 días                           | 15                     | \$3                          | \$10                           |
+| 2             | 8 días                            | 20                     | \$2                          | \$22                           |
+| 3             | 6 días                            | 10                     | \$5                          | \$10                           |
+| 4             | 7 días                            | 30                     | \$4                          | \$8                            |
+
+
+
+
+---
+
+## 1. Recocido Simulado (Simulated Annealing)
+
+### Pseudocódigo
+
+``` {.python code-line-numbers="|1|2|3|4|"}
+1. Inicializar solución actual s y mejor solución s_best
+2. Inicializar temperatura T
+3. Mientras no se cumpla el criterio de parada:
+   a. Generar una nueva solución s_new en el vecindario de s
+   b. Si f(s_new) < f(s):
+       - s = s_new
+   c. Si f(s_new) ≥ f(s):
+       - Aceptar s_new con probabilidad P = exp(-(f(s_new) - f(s)) / T)
+   d. Reducir la temperatura T
+   e. Actualizar s_best si f(s) es mejor que f(s_best)
+4. Retornar s_best
+```
+---
+
+## Explicación Recocido Simulado
+
+1. **Inicialización**: Se comienza con una solución inicial y una temperatura alta.
+2. **Búsqueda de vecindario**: Se genera una nueva solución cercana (vecina).
+3. **Aceptación de soluciones peores**: Dependiendo de la temperatura, puede aceptarse una peor solución.
+4. **Enfriamiento**: La temperatura se va reduciendo progresivamente.
+
+---
+
+--- 
+
+## RECOCIDO SIMULADO CODIGO COMPLETO
+
+``` {.python code-line-numbers="|27-35|36-55|56-60|61-63|"}
+import numpy as np
+import random
+import math
+import pandas as pd
+
+# Supongamos que definimos las funciones de costo y vecindad aquí.
+
+def simulated_annealing(solucion_inicial, costo, vec, max_iteraciones=1000, T0=100, alpha=0.95, t=100):
+    """
+    Ejecuta el algoritmo de recocido simulado.
+    
+    Parámetros:
+    - solucion_inicial: Lista que representa la solución inicial.
+    - costo: Función que calcula el costo de una solución.
+    - vec: Función que genera la vecindad de una solución.
+    - max_iteraciones: Número máximo de iteraciones.
+    - T0: Temperatura inicial.
+    - alpha: Factor de enfriamiento.
+    - t: Número de aceptaciones antes de reducir la temperatura.
+
+    Retorna:
+    - DataFrame con el historial de la búsqueda.
+    - La mejor solución encontrada.
+    - El costo de la mejor solución.
+    """
+    
+    # Paso 1: Inicialización
+    s0 = solucion_inicial  # Solución inicial
+    mejor_solucion = s0
+    mejor_costo = costo(s0)
+    historial = []
+    
+    i = 0  # Índice de temperatura
+    p = 0  # Contador de aceptaciones
+    
+    # Paso 2: Loop principal del algoritmo
+    for k in range(max_iteraciones):
+        Ti = T0 * (alpha ** i)  # Cálculo de la temperatura actual
+        vecindad = vec(s0)
+        sk1 = random.choice(vecindad)
+        delta_costo = costo(sk1) - costo(s0)
+
+        # Evaluación de la nueva solución
+        if delta_costo <= 0 or random.random() < math.exp(-delta_costo / Ti):
+            s0 = sk1  # Aceptar la nueva solución
+            p += 1
+            
+            # Actualización de la mejor solución encontrada
+            if costo(s0) < mejor_costo:
+                mejor_solucion = s0
+                mejor_costo = costo(s0)
+
+        # Registrar el proceso
+        historial.append([k, s0, costo(s0), Ti])
+
+        # Paso 3: Verificación de la condición para enfriar el sistema
+        if p >= t:  # Reducir la temperatura y reiniciar el contador de aceptaciones
+            i += 1
+            p = 0
+
+    # Paso 4: Finalización e impresión de resultados
+    df_historial = pd.DataFrame(historial, columns=['Iteración', 'Solución', 'Costo', 'Temperatura'])
+    return df_historial, mejor_solucion, mejor_costo
+```
+---
+
+
+## Búsqueda Tabú (Tabu Search)
+
+### Pseudocódigo
+
+```{.python code-line-numbers="|1|2|3|4|"}
+1. Inicializar solución actual s y mejor solución s_best
+2. Inicializar lista tabú L
+3. Mientras no se cumpla el criterio de parada:
+   a. Generar vecindario N(s) de la solución actual
+   b. Seleccionar la mejor solución s_new de N(s) que no esté en la lista tabú
+   c. Actualizar s = s_new
+   d. Si f(s) < f(s_best):
+       - s_best = s
+   e. Actualizar la lista tabú L con el movimiento realizado
+   f. Quitar elementos viejos de la lista tabú
+4. Retornar s_best
+```
+
+---
+
+## Explicación Búsqueda Tabú
+
+1. **Inicialización**: Se inicia con una solución y una lista tabú vacía.
+2. **Vecindario**: Se genera un conjunto de soluciones vecinas.
+3. **Restricción tabú**: Se prohíbe visitar soluciones ya exploradas recientemente.
+4. **Actualización**: Se actualiza la solución y se añade el movimiento a la lista tabú.
+
+---
+
+## BUSQUEDA TABU CODIGO COMPLETO
+
+``` {.python}
+import pandas as pd
+import numpy as np
+import random
+
+# Suponiendo que las funciones costo y vec ya están definidas
+
+def busqueda_tabu(solucion_inicial, iteraciones, tamano_lista_tabu):
+    # Inicialización
+    solucion_actual = solucion_inicial
+    mejor_solucion = solucion_inicial
+    costo_mejor_solucion = costo(solucion_actual)
+    lista_tabu = []
+    historial = []  # Para registrar el proceso
+
+    for i in range(iteraciones):
+        vecindario = vec(solucion_actual)
+        vecindario = [vecino for vecino in vecindario if vecino not in lista_tabu]
+
+        # Evaluar vecinos y seleccionar el mejor que no esté en la lista tabú
+        mejor_vecino = min(vecindario, key=costo)
+        costo_mejor_vecino = costo(mejor_vecino)
+
+        # Actualizar la solución actual y la mejor solución encontrada
+        solucion_actual = mejor_vecino
+        if costo_mejor_vecino < costo_mejor_solucion:
+            mejor_solucion = mejor_vecino
+            costo_mejor_solucion = costo_mejor_vecino
+
+        # Actualizar la lista tabú
+        lista_tabu.append(solucion_actual)
+        if len(lista_tabu) > tamano_lista_tabu:
+            lista_tabu.pop(0)
+
+        # Registrar el proceso
+        historial.append([i, solucion_actual, costo_mejor_vecino, lista_tabu])
+
+    # Convertir el historial en un DataFrame para visualización
+    df_historial = pd.DataFrame(historial, columns=['Iteración', 'Solución', 'Costo', 'Lista Tabú'])
+    return df_historial, mejor_solucion, costo_mejor_solucion
+
+# Ejemplo de uso
+solucion_inicial = [4, 1, 3, 2]
+iteraciones = 10
+tamano_lista_tabu = 5
+
+df_historial, mejor_solucion, costo_mejor_solucion = busqueda_tabu(solucion_inicial, iteraciones, tamano_lista_tabu)
+
+# Mostrar el historial de búsqueda
+print(df_historial)
+print(f"Mejor solución encontrada: {mejor_solucion} con un costo de: {costo_mejor_solucion}")
+```
+---
+
+
+## Optimización por Enjambre de Partículas (PSO)
+
+### Pseudocódigo
+
+```{.python code-line-numbers="|1|2|3|4|"}
+1. Inicializar partículas con posiciones y velocidades aleatorias
+2. Para cada partícula, calcular el valor de su función objetivo f(x)
+3. Inicializar mejor posición personal p_best y mejor posición global g_best
+4. Mientras no se cumpla el criterio de parada:
+   a. Para cada partícula:
+       i. Actualizar velocidad: 
+          v = w * v + c1 * r1 * (p_best - x) + c2 * r2 * (g_best - x)
+       ii. Actualizar posición: 
+          x = x + v
+       iii. Evaluar f(x)
+       iv. Si f(x) es mejor que f(p_best):
+           - Actualizar p_best
+       v. Si f(x) es mejor que f(g_best):
+           - Actualizar g_best
+5. Retornar g_best
+```
+
+---
+
+## Explicación PSO
+
+1. **Inicialización**: Se asignan posiciones y velocidades iniciales a las partículas.
+2. **Mejor experiencia**: Cada partícula ajusta su movimiento en función de su mejor solución personal y la mejor global.
+3. **Actualización de posición y velocidad**: Se ajustan las posiciones y velocidades en cada iteración.
+
+---
+
+## Algoritmo Genético (Genetic Algorithm)
+
+### Pseudocódigo
+
+```{.python code-line-numbers="|1|2|3|4|"}
+1. Inicializar una población de individuos (soluciones aleatorias)
+2. Evaluar la función objetivo f(x) para cada individuo
+3. Mientras no se cumpla el criterio de parada:
+   a. Seleccionar padres mediante selección proporcional o torneo
+   b. Aplicar cruce para generar hijos
+   c. Aplicar mutación a los hijos
+   d. Evaluar la función objetivo de los hijos
+   e. Seleccionar la nueva población (elitismo o reemplazo)
+4. Retornar el mejor individuo
+```
+
+---
+
+## Explicación Algoritmo Genético
+
+1. **Inicialización**: Se genera una población inicial de soluciones aleatorias.
+2. **Selección**: Se seleccionan padres basados en su aptitud (valor de la función objetivo).
+3. **Cruce y mutación**: Se combinan los padres y se mutan algunos para generar nuevas soluciones.
+4. **Reemplazo**: Se seleccionan los mejores individuos para formar la nueva población.
+
+---
+
+## Resumen
+
+- **Recocido Simulado (SA)**: Acepta soluciones peores ocasionalmente, con una probabilidad decreciente.
+- **Búsqueda Tabú**: Utiliza una lista de soluciones prohibidas (tabú) para evitar ciclos.
+- **PSO**: Las soluciones se ajustan en función de la experiencia personal y global de las partículas.
+- **Algoritmo Genético (GA)**: Evoluciona una población de soluciones usando cruce y mutación.
+
+---
+
+## Gracias
